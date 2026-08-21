@@ -30,6 +30,14 @@
       "repoUrl": "github.com/juan/itelect4-project",
       "submittedAt": "2026-08-01T09:00:00.000Z",
       "score": 95
+    },
+    {
+      "studentId": 1,
+      "courseCode": "ITELECT4",
+      "repoUrl": "https://github.com/bingstofu/itelect4-project-IT4B-Main",
+      "submittedAt": "2026-08-21T07:56:13.002Z",
+      "id": "p4VVjkpqTvI"
     }
-  ]
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }
