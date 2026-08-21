@@ -1,69 +1,59 @@
-import { useState, useEffect, useRef } from "react";
-import type { User, Course, Submission } from "../types/index";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { User, Course, ApiSubmission } from "../types/index";
 import UserCard from "../components/UserCard";
 import CourseCard from "../components/CourseCard";
 import SubmissionBadge from "../components/SubmissionBadge";
 import useToggle from "../hooks/useToggle";
 import usePrevious from "../hooks/usePrevious";
+import { useUiStore } from "../store/uiStore";
+import { fetchCourses, fetchSubmissions, createSubmission } from "../api/client";
 
 const student: User = {
   id: 1,
-  name: "Juan dela Cruz",
-  email: "juan@example.com",
+  name: "Maria Santos",
+  email: "maria@example.com",
   role: "student",
   isActive: true,
 };
 
-const courseMock: Course = {
-  code: "ITELECT4",
-  title: "IT Elective 4",
-  units: 3,
-  semester: "1st Semester 2026-2027",
-};
-
-const submissionMock: Submission = {
-  id: 1,
-  studentId: 1,
-  courseCode: "ITELECT4",
-  repoUrl: "https://github.com/bingstofu/itelect4-project-IT4B-Main",
-  submittedAt: new Date(),
-  score: 95,
-};
-
 export function Dashboard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isError, setIsError] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
+  const [repoUrl, setRepoUrl] = useState<string>("");
   const [showDetails, toggleDetails] = useToggle(false);
-  const [isDarkMode, toggleDarkModeState] = useToggle(false);
+
+  const searchTerm = useUiStore((state) => state.searchTerm);
+  const setSearchTerm = useUiStore((state) => state.setSearchTerm);
   const previousSearch = usePrevious(searchTerm);
 
-  // Sync dark class on the HTML document element
-  const handleToggleDarkMode = () => {
-    toggleDarkModeState();
-    document.documentElement.classList.toggle("dark");
-  };
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCourses([courseMock]);
-      setIsLoading(false);
-    }, 500);
+  const { data: courses = [], isPending: isLoadingCourses, isError: isCoursesError } = useQuery<Course[]>({
+    queryKey: ["courses"],
+    queryFn: fetchCourses,
+  });
 
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: submissions = [], isPending: isLoadingSubmissions } = useQuery<ApiSubmission[]>({
+    queryKey: ["submissions"],
+    queryFn: fetchSubmissions,
+  });
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setSearchTerm(e.target.value);
-  };
+  const addSubmissionMutation = useMutation({
+    mutationFn: createSubmission,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["submissions"] });
+      setRepoUrl("");
+    },
+  });
 
-  const focusSearchInput = (): void => {
-    searchInputRef.current?.focus();
+  const handleAddSubmission = () => {
+    if (!repoUrl) return;
+    addSubmissionMutation.mutate({
+      studentId: 1,
+      courseCode: "ITELECT4",
+      repoUrl,
+      submittedAt: new Date().toISOString(),
+    });
   };
 
   const filteredCourses = courses.filter(
@@ -72,59 +62,34 @@ export function Dashboard() {
       c.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (isLoading) {
-    return <div className="animate-pulse p-6 font-medium text-gray-500 dark:text-gray-400">Loading courses...</div>;
+  if (isLoadingCourses || isLoadingSubmissions) {
+    return <div className="animate-pulse p-6 font-medium text-gray-500">Loading dashboard...</div>;
   }
 
-  if (isError) {
+  if (isCoursesError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">
-        Could not load courses. Please try again.
+      <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+        Could not load courses. Please check if `json-server` is running on port 3001.
       </div>
     );
   }
 
   return (
-    <div className="transition-colors duration-200">
+    <div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           ITELECT4 Dashboard
         </h2>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleToggleDarkMode}
-            className="rounded bg-gray-800 px-3 py-1.5 text-sm font-medium text-white transition dark:bg-gray-200 dark:text-gray-900"
-          >
-            {isDarkMode ? "Light Mode" : "Dark Mode"}
-          </button>
-          <button
-            onClick={() => setIsError(true)}
-            className="rounded bg-red-100 px-2 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900"
-          >
-            Simulate Error
-          </button>
-        </div>
       </header>
 
       <div className="mb-4">
-        <div className="flex gap-2">
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchTerm}
-            placeholder="Search courses..."
-            onChange={handleSearchChange}
-            className="w-full max-w-sm rounded border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
-          <button
-            onClick={focusSearchInput}
-            className="rounded bg-gray-200 px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-          >
-            Focus Search
-          </button>
-        </div>
-
+        <input
+          type="text"
+          value={searchTerm}
+          placeholder="Search courses..."
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-sm rounded border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+        />
         {previousSearch !== undefined && previousSearch !== searchTerm && (
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Previous search: "{previousSearch}"
@@ -145,21 +110,41 @@ export function Dashboard() {
         ))}
       </div>
 
+      <div className="mt-8 rounded-lg border p-4 dark:border-gray-700">
+        <h3 className="mb-2 font-bold text-gray-900 dark:text-white">Add Submission</h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+            placeholder="github.com/user/repo"
+            className="w-full max-w-md rounded border p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          />
+          <button
+            onClick={handleAddSubmission}
+            disabled={addSubmissionMutation.isPending || !repoUrl}
+            className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {addSubmissionMutation.isPending ? "Adding..." : "Add"}
+          </button>
+        </div>
+      </div>
+
       <div className="my-6">
         <button
           onClick={toggleDetails}
-          className="rounded bg-gray-800 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300"
+          className="rounded bg-gray-800 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900"
         >
-          {showDetails ? "Hide Details" : "Show Details"}
+          {showDetails ? "Hide Submissions" : "Show Submissions"}
         </button>
       </div>
 
       {showDetails && (
-        <SubmissionBadge submission={submissionMock}>
-          <p className="mt-2 text-xs font-bold text-green-600 dark:text-green-400">
-            ✓ Upload Completed Successfully (On Time)
-          </p>
-        </SubmissionBadge>
+        <div className="flex flex-col gap-3">
+          {submissions.map((sub) => (
+            <SubmissionBadge key={sub.id} submission={sub} />
+          ))}
+        </div>
       )}
     </div>
   );

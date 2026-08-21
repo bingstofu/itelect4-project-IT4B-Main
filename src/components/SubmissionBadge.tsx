@@ -1,15 +1,12 @@
 import React from "react";
-import type { Submission } from "../types/index";
+import type { ApiSubmission } from "../types/index";
 
 interface SubmissionBadgeProps {
-  submission: Submission;
+  submission: ApiSubmission;
   children?: React.ReactNode;
 }
 
-const SubmissionBadge: React.FC<SubmissionBadgeProps> = ({
-  submission,
-  children,
-}) => {
+const SubmissionBadge: React.FC<SubmissionBadgeProps> = ({ submission, children }) => {
   return (
     <div className="rounded-lg border border-gray-700 bg-gray-800 p-4 text-white shadow-sm dark:border-gray-600">
       <p className="text-sm">
