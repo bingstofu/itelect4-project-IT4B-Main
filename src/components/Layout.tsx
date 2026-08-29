@@ -39,6 +39,16 @@ export function Layout() {
             >
               Course Detail
             </NavLink>
+            <NavLink
+              to="/submissions"
+              className={({ isActive }) =>
+                `text-sm font-medium hover:text-indigo-600 ${
+                  isActive ? "text-indigo-600 underline font-bold" : "text-gray-600 dark:text-gray-300"
+                }`
+              }
+            >
+              Submissions
+            </NavLink>
           </div>
 
           <div className="flex items-center gap-3">

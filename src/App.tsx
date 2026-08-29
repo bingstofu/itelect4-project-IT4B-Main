@@ -5,6 +5,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Detail } from "./pages/Detail";
 import { Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
+import SubmissionPage from "./pages/SubmissionPage";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/courses/:code" element={<Detail />} />
+          <Route path="/submissions" element={<SubmissionPage />} />
         </Route>
       </Route>
 
